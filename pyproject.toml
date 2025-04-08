@@ -1,6 +1,6 @@
 [build-system]
-requires = ["flit_scm"]
-build-backend = "flit_scm:buildapi"
+requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=6.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "merge-sqlite"
@@ -24,7 +24,6 @@ dependencies = [
 
 [project.optional-dependencies]
 build = [
-  "setuptools_scm",
   "flit",
   "twine",
 ]
