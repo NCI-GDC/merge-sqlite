@@ -24,6 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 build = [
+  "setuptools_scm",
   "flit",
   "twine",
 ]
