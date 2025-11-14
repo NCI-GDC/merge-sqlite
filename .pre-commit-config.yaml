@@ -1,15 +1,16 @@
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 default_language_version:
-  python_venv: python3.8
+  python: python3.9
 
 repos:
-  - repo: git@github.com:Yelp/detect-secrets
-    rev: v1.0.3
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
+        exclude: ^(\.cruft\.json)$
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.4.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -17,18 +18,16 @@ repos:
       - id: detect-aws-credentials
         args: ["--allow-missing-credentials"]
       - id: detect-private-key
-  - repo: https://github.com/pycqa/isort
-    rev: 5.8.0
+      - id: end-of-file-fixer
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.9.6'
     hooks:
-      - id: isort
-        name: isort
-  - repo: https://github.com/psf/black
-    rev: 20.8b1
+      - id: ruff
+        args: [ '--select', 'I', '--fix' ]
+      - id: ruff-format
+  - repo: https://github.com/cruft/cruft
+    rev: 2.16.0
     hooks:
-      - id: black
-  - repo: https://github.com/pycqa/flake8
-    rev: '3.9.2'
-    hooks:
-    -   id: flake8
-        additional_dependencies: [flake8-docstrings]
-
+      - id: cruft
+        name: cruft
+        entry: bash -c 'cruft check || true' --

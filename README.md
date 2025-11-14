@@ -1,7 +1,19 @@
-# merge_sqlite
+# merge-sqlite
 
-Add a short description of your project here.
+Merge Sqllite files
 
 ## Installation
 
-Add any extra steps needed for installation here, including external dependencies.
+```sh
+pip install .
+```
+
+## Development
+
+* Clone this repository
+* Requirements:
+  * Python >= 3.8
+  * Tox
+* `make venv` to create a virtualenv
+* `source .venv/bin/activate` to activate new virtualenv
+* `make init` to install dependencies and pre-commit hooks

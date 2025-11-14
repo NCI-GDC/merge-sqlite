@@ -1,28 +1,30 @@
-FROM quay.io/ncigdc/python38-builder as builder
+ARG REGISTRY=docker.osdc.io/ncigdc
+ARG BASE_CONTAINER_VERSION=latest
 
-COPY ./ /opt
+FROM ${REGISTRY}/python3.9-builder:${BASE_CONTAINER_VERSION} as builder
 
-WORKDIR /opt
+COPY ./ /merge_sqlite
 
-RUN apt-get update \
-    && apt-get install -y \
-       sqlite3 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+WORKDIR /merge_sqlite
 
-RUN pip install tox && tox -p
+RUN pip install tox && tox -e build
 
-FROM quay.io/ncigdc/python38
+FROM ${REGISTRY}/python3.9:${BASE_CONTAINER_VERSION}
 
-COPY --from=builder /opt/dist/*.tar.gz /opt
-COPY requirements.txt /opt
+LABEL org.opencontainers.image.title="merge_sqlite" \
+      org.opencontainers.image.description="Merge Sqllite files" \
+      org.opencontainers.image.source="https://github.com/NCI-GDC/merge-sqlite" \
+      org.opencontainers.image.vendor="NCI GDC"
 
-WORKDIR /opt
+COPY --from=builder /merge_sqlite/dist/*.whl /merge_sqlite/
+COPY requirements.txt /merge_sqlite/
 
-RUN pip install -r requirements.txt \
-	&& pip install *.tar.gz \
-	&& rm -f *.tar.gz requirements.txt
+WORKDIR /merge_sqlite
 
-ENTRYPOINT ["merge_sqlite"]
+RUN pip install --no-deps -r requirements.txt \
+	&& pip install --no-deps *.whl \
+	&& rm -f *.whl requirements.txt
 
-CMD ["--help"]
+USER app
+
+CMD ["merge_sqlite --help"]

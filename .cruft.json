@@ -1,0 +1,20 @@
+{
+    "template": "git@github.com:NCI-GDC/bio-python-template.git",
+    "commit": "baf2226bed9c364393971df5fb8ed3bdafa1c744",
+    "context": {
+      "cookiecutter": {
+        "full_name": "Linghao Song",
+        "email": "sxwcasd@gmail.com",
+        "github_username": "sxwcasd",
+        "project_name": "merge-sqlite",
+        "package_name": "merge_sqlite",
+        "project_short_description": "Merge Sqllite files",
+        "min_python_version": "3.8",
+        "github_repo": "https://github.com/NCI-GDC/merge-sqlite",
+        "commit": "baf2226bed9c364393971df5fb8ed3bdafa1c744",
+        "_template": "git@github.com:NCI-GDC/bio-python-template.git"
+      }
+    },
+    "directory": null,
+    "checkout": null
+  }
