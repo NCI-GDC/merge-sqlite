@@ -21,11 +21,8 @@ COPY requirements.txt /merge_sqlite/
 
 WORKDIR /merge_sqlite
 
-RUN apt-get update \
-    && apt-get install -y \
-       sqlite3 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN dnf install -y sqlite && \
+    dnf clean all
 
 RUN pip install --no-deps -r requirements.txt \
 	&& pip install --no-deps *.whl \
