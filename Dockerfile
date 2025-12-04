@@ -32,4 +32,3 @@ USER app
 
 #CMD ["merge_sqlite --help"]
 CMD ["merge_sqlite", "--help"]
-
