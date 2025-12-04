@@ -30,4 +30,6 @@ RUN pip install --no-deps -r requirements.txt \
 
 USER app
 
-CMD ["merge_sqlite --help"]
+#CMD ["merge_sqlite --help"]
+CMD ["merge_sqlite", "--help"]
+
