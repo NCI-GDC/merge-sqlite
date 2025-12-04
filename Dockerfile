@@ -36,4 +36,3 @@ USER app
 # Correct CMD (split executable and args)
 ENTRYPOINT ["merge_sqlite"]
 CMD ["--help"]
-
