@@ -31,4 +31,9 @@ RUN pip install --no-deps -r requirements.txt \
 USER app
 
 #CMD ["merge_sqlite --help"]
-CMD ["merge_sqlite", "--help"]
+#CMD ["merge_sqlite", "--help"]
+
+# Correct CMD (split executable and args)
+ENTRYPOINT ["merge_sqlite"]
+CMD ["--help"]
+
