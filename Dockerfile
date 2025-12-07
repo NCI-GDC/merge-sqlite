@@ -3,6 +3,10 @@ ARG BASE_CONTAINER_VERSION=latest
 
 FROM ${REGISTRY}/python3.9-builder:${BASE_CONTAINER_VERSION} as builder
 
+ARG REGISTRY
+ARG BASE_CONTAINER_VERSION
+
+
 COPY ./ /merge_sqlite
 
 WORKDIR /merge_sqlite
