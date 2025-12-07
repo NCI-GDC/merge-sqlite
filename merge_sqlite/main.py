@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 import os
-import shlex
+
+# import shlex
 import sys
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
 from pathlib import Path
-from subprocess import check_output
+
+# from subprocess import check_output
+from subprocess import check_call
 from typing import IO, List
 
 
@@ -110,35 +113,65 @@ def main() -> int:
 
     logger = setup_logging(args, job_uuid)
 
+    # create empty db
     if source_sqlite_list is None:
         logger.info("empty set, create 0 byte file")
-        db = Path(f"{job_uuid}.db")
-        db.touch()
-    else:
-        for source_sqlite_path in source_sqlite_list:
-            logger.info(f"{source_sqlite_path=}")
-            source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
-                0
-            ]
+        Path(f"{job_uuid}.db").touch()
+        return 0
 
-            # dump
-            source_dump_path = f"{source_sqlite_name}.sql"
-            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
-            shell_cmd = shlex.split(cmd, shell=True)
-            # output = check_output(shell_cmd)
+    destination_sqlite_path = f"{job_uuid}.db"
 
-            # alter text create table/index
-            create_notfail_file = allow_create_fail(source_dump_path)
+    for source_sqlite_path in source_sqlite_list:
+        logger.info(f"{source_sqlite_path=}")
+        source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[0]
 
-            # specific column insert
-            specific_insert_file = specific_column_insert(create_notfail_file, logger)
+        # dump
+        source_dump_path = f"{source_sqlite_name}.sql"
+        cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
+        check_call(cmd, shell=True)
 
-            # load
-            destination_sqlite_path = f"{job_uuid}.db"
-            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
-            shell_cmd = shlex.split(cmd)
-            check_output(shell_cmd)
+        # patch CREATE statements
+        create_notfail_file = allow_create_fail(source_dump_path)
+
+        # patch INSERT statements
+        specific_insert_file = specific_column_insert(create_notfail_file, logger)
+
+        # load into destination
+        cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
+        check_call(cmd, shell=True)
+
     return 0
+
+
+#    if source_sqlite_list is None:
+#        logger.info("empty set, create 0 byte file")
+#        db = Path(f"{job_uuid}.db")
+#        db.touch()
+#    else:
+#        for source_sqlite_path in source_sqlite_list:
+#            logger.info(f"{source_sqlite_path=}")
+#            source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
+#               0
+#            ]
+
+# dump
+#            source_dump_path = f"{source_sqlite_name}.sql"
+#            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
+#            shell_cmd = shlex.split(cmd, shell=True)
+# output = check_output(shell_cmd)
+
+# alter text create table/index
+#            create_notfail_file = allow_create_fail(source_dump_path)
+
+# specific column insert
+#            specific_insert_file = specific_column_insert(create_notfail_file, logger)
+
+# load
+#            destination_sqlite_path = f"{job_uuid}.db"
+#            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
+#            shell_cmd = shlex.split(cmd)
+#            check_output(shell_cmd)
+#    return 0
 
 
 if __name__ == "__main__":
