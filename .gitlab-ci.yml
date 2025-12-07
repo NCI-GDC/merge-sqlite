@@ -9,5 +9,4 @@ include:
 variables:
   BUILD_PY_VERSION: python3.8
   RELEASE_PY_VERSION: python3.8
-
-image: docker.osdc.io/ncigdc/python3.9-builder:latest
+  PYTHON_IMAGE: docker.osdc.io/ncigdc/python3.9-builder:latest
