@@ -1,7 +1,7 @@
 ---
 include:
   - project: nci-gdc/gitlab-templates
-    ref: master
+    ref: main
     file:
       - templates/global/full.yaml
       - templates/python/full.yaml
@@ -9,3 +9,6 @@ include:
 variables:
   BUILD_PY_VERSION: python3.9
   RELEASE_PY_VERSION: python3.9
+
+default:
+  image: docker.osdc.io/ncigdc/python3.9-builder:latest
