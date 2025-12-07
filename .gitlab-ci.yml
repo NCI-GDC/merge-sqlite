@@ -15,6 +15,7 @@ pre-commit:
   image: docker.osdc.io/ncigdc/python3.9-builder:latest
   stage: test
   script:
+    - pre-commit run --all-files
     - pip install --upgrade pip tox
     - tox -e build
 
@@ -26,23 +27,6 @@ build:
     - pip install --upgrade pip tox
     - tox -e build
 
-# Lint job (example)
-lint:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
-  stage: lint
-  script:
-    - pip install --upgrade pip tox
-    - tox -e lint
-
-# Test job
-test:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
-  stage: test
-  script:
-    - pip install --upgrade pip tox
-    - tox -e py
-
-# Optional: skip missing secrets image to avoid failures
 services: []
 
 
