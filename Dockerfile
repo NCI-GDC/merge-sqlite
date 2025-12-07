@@ -1,7 +1,7 @@
 ARG REGISTRY=docker.osdc.io/ncigdc
 ARG BASE_CONTAINER_VERSION=latest
 
-FROM ${REGISTRY}/python3.9-builder:${BASE_CONTAINER_VERSION} as builder
+FROM ${REGISTRY}/python3.9-builder:latest as builder
 
 ARG REGISTRY
 ARG BASE_CONTAINER_VERSION
@@ -13,7 +13,7 @@ WORKDIR /merge_sqlite
 
 RUN pip install tox && tox -e build
 
-FROM ${REGISTRY}/python3.9:${BASE_CONTAINER_VERSION}
+FROM ${REGISTRY}/python3.9:latest
 
 LABEL org.opencontainers.image.title="merge_sqlite" \
       org.opencontainers.image.description="Merge Sqllite files" \
