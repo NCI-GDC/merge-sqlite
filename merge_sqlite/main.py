@@ -124,7 +124,7 @@ def main() -> int:
             # dump
             source_dump_path = f"{source_sqlite_name}.sql"
             cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
-            shell_cmd = shlex.split(cmd)
+            shell_cmd = shlex.split(cmd, shell=True)
             # output = check_output(shell_cmd)
 
             # alter text create table/index
