@@ -9,12 +9,12 @@ clean-dirs:
 	rm -rf ./*.egg-info/
 	rm -rf ./htmlcov/
 
-detect-secrets: scan-secrets audit-secrets
+detect-secrets: scan-secrets audit-secrets # pragma: allowlist secret
 scan-secrets:
-	detect-secrets scan --baseline .secrets.baseline
+	detect-secrets scan --baseline .secrets.baseline # pragma: allowlist secret
 
 audit-secrets:
-	detect-secrets audit .secrets.baseline
+	detect-secrets audit .secrets.baseline # pragma: allowlist secret
 
 init: init-hooks init-pip
 

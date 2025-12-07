@@ -1,35 +1,11 @@
 ---
 include:
   - project: nci-gdc/gitlab-templates
-    ref: master
+    ref: feat/GDCPE-1498-global-updates
     file:
       - templates/global/full.yaml
       - templates/python/full.yaml
 
 variables:
-  BUILD_PY_VERSION: python3.8
-  RELEASE_PY_VERSION: python3.8
-
-# Pre-commit job
-pre-commit:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
-  stage: test
-  script:
-    - pre-commit run --all-files
-#    - pip install --upgrade pip tox
-    - pip install --upgrade pip tox pre-commit
-    - tox -e build
-
-# Build job (Docker build)
-build:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
-  stage: build
-  script:
-    - pip install --upgrade pip tox
-    - tox -e build
-
-services: []
-
-
-default:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
+  BUILD_PY_VERSION: python3.9
+  RELEASE_PY_VERSION: python3.9
