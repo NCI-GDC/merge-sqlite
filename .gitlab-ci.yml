@@ -15,6 +15,7 @@ pre-commit:
   stage: test
   script:
     - pre-commit run --all-files
+    - tox -e build
 
 # Example: override other jobs if needed
 build:
