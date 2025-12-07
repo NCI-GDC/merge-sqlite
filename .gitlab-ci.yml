@@ -15,7 +15,9 @@ pre-commit:
   stage: test
   script:
     - pre-commit run --all-files
+    - pip install tox
     - tox -e build
+  services: []
 
 # Example: override other jobs if needed
 build:
