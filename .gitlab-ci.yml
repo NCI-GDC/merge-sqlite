@@ -16,7 +16,8 @@ pre-commit:
   stage: test
   script:
     - pre-commit run --all-files
-    - pip install --upgrade pip tox
+#    - pip install --upgrade pip tox
+    - pip install --upgrade pip tox pre-commit
     - tox -e build
 
 # Build job (Docker build)
