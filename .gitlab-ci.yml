@@ -29,6 +29,7 @@ variables:
   RELEASE_PY_VERSION: python3.9
   BASE_CONTAINER_VERSION: "latest"
   BASE_CONTAINER_REGISTRY: "docker.osdc.io/ncigdc"
+  GIT_DEPTH: "0"
 
 default:
   image: docker.osdc.io/ncigdc/python3.9-builder:latest
