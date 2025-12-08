@@ -1,10 +1,14 @@
 ---
 include:
   - project: nci-gdc/gitlab-templates
-#    ref: main
+    ref: master
     file:
       - templates/global/full.yaml
       - templates/python/full.yaml
+
+# Override python template image
+.python-base:
+  image: docker.osdc.io/ncigdc/python3.9-builder:latest
 
 variables:
   BUILD_PY_VERSION: python3.9
