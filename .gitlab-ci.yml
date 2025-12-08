@@ -1,3 +1,21 @@
+#---
+#include:
+#  - project: nci-gdc/gitlab-templates
+#    ref: master
+#    file:
+#      - templates/global/full.yaml
+#      - templates/python/full.yaml
+
+# Override python template image
+#.python-base:
+#  image: docker.osdc.io/ncigdc/python3.9-builder:latest
+
+#variables:
+#  BUILD_PY_VERSION: python3.9
+#  RELEASE_PY_VERSION: python3.9
+
+#default:
+#  image: docker.osdc.io/ncigdc/python3.9-builder:latest
 ---
 include:
   - project: nci-gdc/gitlab-templates
@@ -6,13 +24,17 @@ include:
       - templates/global/full.yaml
       - templates/python/full.yaml
 
-# Override python template image
-.python-base:
-  image: docker.osdc.io/ncigdc/python3.9-builder:latest
-
 variables:
   BUILD_PY_VERSION: python3.9
   RELEASE_PY_VERSION: python3.9
+  BASE_CONTAINER_VERSION: "latest"
+  BASE_CONTAINER_REGISTRY: "docker.osdc.io/ncigdc"
 
 default:
+  image: docker.osdc.io/ncigdc/python3.9-builder:latest
+
+# ---------------------------------------------------------------------------
+# MUST COME LAST — overrides the template's python-base definition
+# ---------------------------------------------------------------------------
+.python-base:
   image: docker.osdc.io/ncigdc/python3.9-builder:latest
