@@ -122,8 +122,19 @@ def alter_insert(sql_path: str, logger: Logger) -> str:
     return specific_insert_file
 
 
+# def specific_column_insert(sql_path: str, logger: Logger) -> str:
+#    specific_insert_file = alter_insert(sql_path, logger)
+#    return specific_insert_file
 def specific_column_insert(sql_path: str, logger: Logger) -> str:
     specific_insert_file = alter_insert(sql_path, logger)
+    with open(specific_insert_file, "r") as f:
+        data = f.read()
+
+    data = data.replace("INSERT INTO", "INSERT OR IGNORE INTO")
+
+    with open(specific_insert_file, "w") as f:
+        f.write(data)
+
     return specific_insert_file
 
 
