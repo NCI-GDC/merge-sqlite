@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 import os
-import subprocess
+import shlex
 import sys
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
 from pathlib import Path
+from subprocess import check_output
 from typing import IO, List
 
 
@@ -33,26 +34,22 @@ def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> Lis
     table_column_list: List[str] = list()
     for line in f_open:
         logger.info("line=%s" % line)
-        stripped_line = line.strip()
-        alter_sql_open.write(line)
-        if stripped_line.startswith(");"):
+        if line.startswith(");"):
+            alter_sql_open.write(line)
             return table_column_list
-        if not stripped_line:
-            continue
-        line_split = stripped_line.rstrip(",").split()
-        if len(line_split) < 2:
-            continue
-        column_name = " ".join(line_split[:-1])
-        table_column_list.append(column_name)
-    return table_column_list
+        else:
+            alter_sql_open.write(line)
+            line = line.strip().strip("\n").lstrip().rstrip(",")
+            line_split = line.split()
+            column_name = " ".join(line_split[:-1])
+            table_column_list.append(column_name)
+    sys.exit(f"failed on file: {f_open}")
 
 
 def alter_insert(sql_path: str, logger: Logger) -> str:
     specific_insert_file = "specific_insert.sql"
-    with open(sql_path, "r") as f_open, open(
-        specific_insert_file, "w"
-    ) as alter_sql_open:
-        table_column_list = []
+    alter_sql_open = open(specific_insert_file, "w")
+    with open(sql_path, "r") as f_open:
         for line in f_open:
             if line.startswith("CREATE TABLE"):
                 alter_sql_open.write(line)
@@ -60,21 +57,22 @@ def alter_insert(sql_path: str, logger: Logger) -> str:
                     f_open, alter_sql_open, logger
                 )
             elif line.startswith("INSERT INTO"):
-                line_split = line.strip().split()
+                line = line.strip("\n")
                 specific_columns = "(" + ",".join(table_column_list) + ")"
                 logger.info("specific_columns=%s" % specific_columns)
-                # Use INSERT OR IGNORE to avoid UNIQUE constraint errors
-                line_split[0] = "INSERT"
-                line_split.insert(1, "OR IGNORE")
+                line_split = line.split()
                 line_split.insert(3, specific_columns)
-                alter_sql_open.write(" ".join(line_split) + "\n")
+                new_line = " ".join(line_split) + "\n"
+                alter_sql_open.write(new_line)
             else:
                 alter_sql_open.write(line)
+    alter_sql_open.close()
     return specific_insert_file
 
 
 def specific_column_insert(sql_path: str, logger: Logger) -> str:
-    return alter_insert(sql_path, logger)
+    specific_insert_file = alter_insert(sql_path, logger)
+    return specific_insert_file
 
 
 def setup_logging(args: Namespace, job_uuid: str) -> Logger:
@@ -92,6 +90,7 @@ def setup_logging(args: Namespace, job_uuid: str) -> Logger:
 
 def main() -> int:
     parser = ArgumentParser("merge an arbitrary number of sqlite files")
+    # Logging flags.
     parser.add_argument(
         "-d",
         "--debug",
@@ -101,51 +100,46 @@ def main() -> int:
         help="Enable debug logging.",
     )
     parser.set_defaults(level=INFO)
+
     parser.add_argument("-s", "--source_sqlite", action="append", required=False)
     parser.add_argument("-u", "--job_uuid", required=True)
     args = parser.parse_args()
 
     source_sqlite_list = args.source_sqlite
     job_uuid = args.job_uuid
+
     logger = setup_logging(args, job_uuid)
-    destination_sqlite_path = os.path.abspath(f"{job_uuid}.db")
 
-    # Ensure destination DB exists
-    Path(destination_sqlite_path).touch(exist_ok=True)
+    if source_sqlite_list is None:
+        logger.info("empty set, create 0 byte file")
+        db = Path(f"{job_uuid}.db")
+        db.touch()
+    else:
+        for source_sqlite_path in source_sqlite_list:
+            logger.info(f"{source_sqlite_path=}")
+            source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
+                0
+            ]
 
-    if not source_sqlite_list:
-        logger.info(
-            "No source databases provided, created empty DB: %s",
-            destination_sqlite_path,
-        )
-        return 0
+            # dump
+            source_dump_path = f"{source_sqlite_name}.sql"
+            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
+            shell_cmd = shlex.split(cmd)
+            check_output(shell_cmd, shell=True)
 
-    for source_sqlite_path in source_sqlite_list:
-        source_sqlite_path = os.path.abspath(source_sqlite_path)
-        source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[0]
-        source_dump_path = os.path.abspath(f"{source_sqlite_name}.sql")
+            # alter text create table/index
+            create_notfail_file = allow_create_fail(source_dump_path)
 
-        # Dump SQLite database safely
-        with open(source_dump_path, "wb") as f:
-            subprocess.run(
-                ["sqlite3", source_sqlite_path, ".dump"], stdout=f, check=True
-            )
+            # specific column insert
+            specific_insert_file = specific_column_insert(create_notfail_file, logger)
 
-        # Convert CREATE statements to IF NOT EXISTS
-        create_notfail_file = allow_create_fail(source_dump_path)
-
-        # Rewrite INSERT statements with specific columns and OR IGNORE
-        specific_insert_file = specific_column_insert(create_notfail_file, logger)
-
-        # Load into destination DB
-        with open(specific_insert_file, "rb") as f:
-            subprocess.run(["sqlite3", destination_sqlite_path], stdin=f, check=True)
-
-        logger.info("Merged %s into %s", source_sqlite_path, destination_sqlite_path)
-
-    logger.info("All databases merged successfully into %s", destination_sqlite_path)
+            # load
+            destination_sqlite_path = f"{job_uuid}.db"
+            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
+            shell_cmd = shlex.split(cmd)
+            check_output(shell_cmd)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
