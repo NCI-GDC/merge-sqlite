@@ -125,7 +125,7 @@ def main() -> int:
             source_dump_path = f"{source_sqlite_name}.sql"
             cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
             shell_cmd = shlex.split(cmd)
-            check_output(shell_cmd)
+            check_output(shell_cmd, shell=True)
 
             # alter text create table/index
             create_notfail_file = allow_create_fail(source_dump_path)
