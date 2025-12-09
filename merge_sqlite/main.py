@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 import os
-import shlex
+import subprocess
 import sys
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
 from pathlib import Path
-from subprocess import check_output
+
+# from subprocess import check_output
 from typing import IO, List
 
 
@@ -122,8 +123,12 @@ def main() -> int:
 
             # dump
             source_dump_path = f"{source_sqlite_name}.sql"
-            with open(source_dump_path, "w") as f:
-                check_output(["sqlite3", source_sqlite_path, ".dump"], stdout=f)
+
+            # Dump SQLite database safely
+            with open(source_dump_path, "wb") as f:  # note binary mode
+                subprocess.run(
+                    ["sqlite3", source_sqlite_path, ".dump"], stdout=f, check=True
+                )
 
             # alter text create table/index
             create_notfail_file = allow_create_fail(source_dump_path)
@@ -133,8 +138,10 @@ def main() -> int:
 
             # load
             destination_sqlite_path = f"{job_uuid}.db"
-            with open(specific_insert_file, "r") as f:
-                check_output(["sqlite3", destination_sqlite_path], stdin=f)
+            with open(specific_insert_file, "rb") as f:
+                subprocess.run(
+                    ["sqlite3", destination_sqlite_path], stdin=f, check=True
+                )
 
     return 0
 
