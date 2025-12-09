@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import shlex
 import sys
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
