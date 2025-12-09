@@ -137,7 +137,7 @@ def main() -> int:
             destination_sqlite_path = f"{job_uuid}.db"
             cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
             shell_cmd = shlex.split(cmd)
-            check_output(shell_cmd)
+            check_output(shell_cmd, shell=True)
     return 0
 
 
