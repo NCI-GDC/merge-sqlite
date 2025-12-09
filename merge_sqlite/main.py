@@ -78,9 +78,24 @@ def specific_column_insert(sql_path: str, logger: Logger) -> str:
     return specific_insert_file
 
 
+# def setup_logging(args: Namespace, job_uuid: str) -> Logger:
+#    basicConfig(
+#        filename=os.path.join(job_uuid + ".log"),
+#        level=args.level,
+#        filemode="w",
+#        format="%(asctime)s %(levelname)s %(message)s",
+#        datefmt="%Y-%m-%d_%H:%M:%S_%Z",
+#    )
+#    getLogger("sqlalchemy.engine").setLevel(INFO)
+#    logger = getLogger(__name__)
+#    return logger
 def setup_logging(args: Namespace, job_uuid: str) -> Logger:
+    # Pick a writable directory
+    tmpdir = os.environ.get("TMPDIR") or "/tmp"
+    logfile = os.path.join(tmpdir, f"{job_uuid}.log")
+
     basicConfig(
-        filename=os.path.join(job_uuid + ".log"),
+        filename=logfile,
         level=args.level,
         filemode="w",
         format="%(asctime)s %(levelname)s %(message)s",
