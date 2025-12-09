@@ -63,6 +63,28 @@ def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> Lis
     return table_column_list  # return even if no ');' found
 
 
+# def alter_insert(sql_path: str, logger: Logger) -> str:
+#    specific_insert_file = "specific_insert.sql"
+#    alter_sql_open = open(specific_insert_file, "w")
+#    with open(sql_path, "r") as f_open:
+#        for line in f_open:
+#            if line.startswith("CREATE TABLE"):
+#                alter_sql_open.write(line)
+#                table_column_list = get_table_column_list(
+#                    f_open, alter_sql_open, logger
+#                )
+#            elif line.startswith("INSERT INTO"):
+#                line = line.strip("\n")
+#                specific_columns = "(" + ",".join(table_column_list) + ")"
+#                logger.info("specific_columns=%s" % specific_columns)
+#                line_split = line.split()
+#                line_split.insert(3, specific_columns)
+#                new_line = " ".join(line_split) + "\n"
+#                alter_sql_open.write(new_line)
+#            else:
+#                alter_sql_open.write(line)
+#    alter_sql_open.close()
+#    return specific_insert_file
 def alter_insert(sql_path: str, logger: Logger) -> str:
     specific_insert_file = "specific_insert.sql"
     alter_sql_open = open(specific_insert_file, "w")
@@ -78,6 +100,10 @@ def alter_insert(sql_path: str, logger: Logger) -> str:
                 specific_columns = "(" + ",".join(table_column_list) + ")"
                 logger.info("specific_columns=%s" % specific_columns)
                 line_split = line.split()
+                # Change INSERT INTO -> INSERT OR IGNORE INTO
+                line_split[0] = "INSERT"
+                line_split.insert(1, "OR IGNORE")
+                # Insert column list after table name
                 line_split.insert(3, specific_columns)
                 new_line = " ".join(line_split) + "\n"
                 alter_sql_open.write(new_line)
