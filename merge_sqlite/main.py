@@ -44,17 +44,26 @@ def allow_create_fail(sql_path: str) -> str:
 #            table_column_list.append(column_name)
 #    sys.exit(f"failed on file: {f_open}")
 def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
-    table_column_list: List[str] = list()
+    table_column_list: List[str] = []
     for line in f_open:
         logger.info("line=%s" % line)
         alter_sql_open.write(line)
-        if line.strip().startswith(");"):
+        line_stripped = line.strip()
+        if not line_stripped or line_stripped.startswith("--"):
+            continue  # skip empty lines and comments
+        if line_stripped.startswith(");"):
+            # End of CREATE TABLE block
             return table_column_list
-        line_stripped = line.strip().rstrip(",")
+        # Remove trailing comma if present
+        if line_stripped.endswith(","):
+            line_stripped = line_stripped[:-1]
+        # Skip lines that don't look like column definitions
+        if " " not in line_stripped:
+            continue
         line_split = line_stripped.split()
-        column_name = " ".join(line_split[:-1])
+        column_name = line_split[0]  # just the column name
         table_column_list.append(column_name)
-    sys.exit(f"failed on file: {f_open}")
+    return table_column_list  # fallback
 
 
 def alter_insert(sql_path: str, logger: Logger) -> str:
