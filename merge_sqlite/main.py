@@ -124,7 +124,7 @@ def main() -> int:
             # dump
             source_dump_path = f"{source_sqlite_name}.sql"
             cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
-            shell_cmd = shlex.split(cmd)
+            #            shell_cmd = shlex.split(cmd)
             check_output(shell_cmd, shell=True)
 
             # alter text create table/index
@@ -136,7 +136,7 @@ def main() -> int:
             # load
             destination_sqlite_path = f"{job_uuid}.db"
             cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
-            shell_cmd = shlex.split(cmd)
+            #            shell_cmd = shlex.split(cmd)
             check_output(shell_cmd, shell=True)
     return 0
 
