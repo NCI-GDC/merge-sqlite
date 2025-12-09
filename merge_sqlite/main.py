@@ -29,19 +29,31 @@ def allow_create_fail(sql_path: str) -> str:
     return create_notfail_file
 
 
+# def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
+#    table_column_list: List[str] = list()
+#    for line in f_open:
+#        logger.info("line=%s" % line)
+#        if line.startswith(");"):
+#            alter_sql_open.write(line)
+#            return table_column_list
+#        else:
+#            alter_sql_open.write(line)
+#            line = line.strip().strip("\n").lstrip().rstrip(",")
+#            line_split = line.split()
+#            column_name = " ".join(line_split[:-1])
+#            table_column_list.append(column_name)
+#    sys.exit(f"failed on file: {f_open}")
 def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
     table_column_list: List[str] = list()
     for line in f_open:
         logger.info("line=%s" % line)
-        if line.startswith(");"):
-            alter_sql_open.write(line)
+        alter_sql_open.write(line)
+        if line.strip().startswith(");"):
             return table_column_list
-        else:
-            alter_sql_open.write(line)
-            line = line.strip().strip("\n").lstrip().rstrip(",")
-            line_split = line.split()
-            column_name = " ".join(line_split[:-1])
-            table_column_list.append(column_name)
+        line_stripped = line.strip().rstrip(",")
+        line_split = line_stripped.split()
+        column_name = " ".join(line_split[:-1])
+        table_column_list.append(column_name)
     sys.exit(f"failed on file: {f_open}")
 
 
