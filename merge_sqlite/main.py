@@ -116,16 +116,14 @@ def main() -> int:
         db.touch()
     else:
         for source_sqlite_path in source_sqlite_list:
-            logger.info(f"{source_sqlite_path=}")
             source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
                 0
             ]
 
             # dump
             source_dump_path = f"{source_sqlite_name}.sql"
-            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
-            shell_cmd = shlex.split(cmd)
-            check_output(shell_cmd, shell=True)
+            with open(source_dump_path, "w") as f:
+                check_output(["sqlite3", source_sqlite_path, ".dump"], stdout=f)
 
             # alter text create table/index
             create_notfail_file = allow_create_fail(source_dump_path)
@@ -135,11 +133,40 @@ def main() -> int:
 
             # load
             destination_sqlite_path = f"{job_uuid}.db"
-            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
-            shell_cmd = shlex.split(cmd)
-            check_output(shell_cmd)
+            with open(specific_insert_file, "r") as f:
+                check_output(["sqlite3", destination_sqlite_path], stdin=f)
+
     return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
+
+#        for source_sqlite_path in source_sqlite_list:
+#            logger.info(f"{source_sqlite_path=}")
+#            source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
+#                0
+#            ]
+
+# dump
+#            source_dump_path = f"{source_sqlite_name}.sql"
+#            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
+#            shell_cmd = shlex.split(cmd)
+#            check_output(shell_cmd, shell=True)
+
+# alter text create table/index
+#            create_notfail_file = allow_create_fail(source_dump_path)
+
+# specific column insert
+#            specific_insert_file = specific_column_insert(create_notfail_file, logger)
+
+# load
+#            destination_sqlite_path = f"{job_uuid}.db"
+#            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
+#            shell_cmd = shlex.split(cmd)
+#            check_output(shell_cmd)
+#    return 0
+
+
+# if __name__ == "__main__":
+#    main()
