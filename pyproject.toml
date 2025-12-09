@@ -19,7 +19,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "click>=8.0,<8.2"
+    "click"
 ]
 
 [project.optional-dependencies]
@@ -39,8 +39,8 @@ dev = [
 ]
 
 test = [
-    "coverage[toml]<7",
-    "pytest<8",
+    "coverage[toml]",
+    "pytest",
 ]
 
 type = [
