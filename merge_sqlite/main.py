@@ -197,9 +197,12 @@ def main() -> int:
 
             # dump
             source_dump_path = f"{source_sqlite_name}.sql"
-            cmd = f"sqlite3 {source_sqlite_path} '.dump' > {source_dump_path}"
+            cmd = ["sqlite3", source_sqlite_path, ".dump"]
+            dump = check_output(cmd)
+            with open(source_dump_path, "wb") as f:
+                f.write(dump)
             #            shell_cmd = shlex.split(cmd)
-            check_output(cmd, shell=True)
+            # check_output(cmd, shell=True)
 
             # alter text create table/index
             create_notfail_file = allow_create_fail(source_dump_path)
@@ -209,9 +212,12 @@ def main() -> int:
 
             # load
             destination_sqlite_path = f"{job_uuid}.db"
-            cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
+            cmd = ["sqlite3", destination_sqlite_path]
+            with open(specific_insert_file, "rb") as f:
+                check_output(cmd, input=f.read())
+            # cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
             #            shell_cmd = shlex.split(cmd)
-            check_output(cmd, shell=True)
+            # check_output(cmd, shell=True)
     return 0
 
 
