@@ -163,8 +163,9 @@ def setup_logging(args: Namespace, job_uuid: str) -> Logger:
 
 
 def main() -> int:
+    import sqlite3
+
     parser = ArgumentParser("merge an arbitrary number of sqlite files")
-    # Logging flags.
     parser.add_argument(
         "-d",
         "--debug",
@@ -174,7 +175,6 @@ def main() -> int:
         help="Enable debug logging.",
     )
     parser.set_defaults(level=INFO)
-
     parser.add_argument("-s", "--source_sqlite", action="append", required=False)
     parser.add_argument("-u", "--job_uuid", required=True)
     args = parser.parse_args()
@@ -183,41 +183,51 @@ def main() -> int:
     job_uuid = args.job_uuid
 
     logger = setup_logging(args, job_uuid)
+    destination_sqlite_path = f"{job_uuid}.db"
 
-    if source_sqlite_list is None:
-        logger.info("empty set, create 0 byte file")
-        db = Path(f"{job_uuid}.db")
-        db.touch()
-    else:
-        for source_sqlite_path in source_sqlite_list:
-            logger.info(f"{source_sqlite_path=}")
-            source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[
-                0
-            ]
+    # Empty input case: create empty DB file
+    if not source_sqlite_list:
+        logger.info("empty set, create 0 byte sqlite file")
+        Path(destination_sqlite_path).touch()
+        return 0
 
-            # dump
-            source_dump_path = f"{source_sqlite_name}.sql"
-            cmd = ["sqlite3", source_sqlite_path, ".dump"]
-            dump = check_output(cmd)
-            with open(source_dump_path, "wb") as f:
-                f.write(dump)
-            #            shell_cmd = shlex.split(cmd)
-            # check_output(cmd, shell=True)
+    # Create destination DB
+    conn = sqlite3.connect(destination_sqlite_path)
+    cur = conn.cursor()
 
-            # alter text create table/index
-            create_notfail_file = allow_create_fail(source_dump_path)
+    for source_sqlite_path in source_sqlite_list:
+        logger.info(f"merging source={source_sqlite_path}")
 
-            # specific column insert
-            specific_insert_file = specific_column_insert(create_notfail_file, logger)
+        # Attach source DB read-only
+        cur.execute("ATTACH ? AS src", (source_sqlite_path,))
 
-            # load
-            destination_sqlite_path = f"{job_uuid}.db"
-            cmd = ["sqlite3", destination_sqlite_path]
-            with open(specific_insert_file, "rb") as f:
-                check_output(cmd, input=f.read())
-            # cmd = f"sqlite3 {destination_sqlite_path} < {specific_insert_file}"
-            #            shell_cmd = shlex.split(cmd)
-            # check_output(cmd, shell=True)
+        # Discover tables
+        tables = cur.execute("""
+            SELECT name
+            FROM src.sqlite_master
+            WHERE type='table'
+              AND name NOT LIKE 'sqlite_%'
+        """).fetchall()
+
+        for (table,) in tables:
+            logger.info(f"merging table={table}")
+
+            # Create table if missing (schema comes from source)
+            cur.execute(f"""
+                CREATE TABLE IF NOT EXISTS {table}
+                AS SELECT * FROM src.{table} WHERE 0;
+            """)
+
+            # Insert rows safely
+            cur.execute(f"""
+                INSERT OR IGNORE INTO {table}
+                SELECT * FROM src.{table};
+            """)
+
+        cur.execute("DETACH src")
+        conn.commit()
+
+    conn.close()
     return 0
 
 
