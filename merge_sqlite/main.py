@@ -6,7 +6,8 @@ import os
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
 from pathlib import Path
-from subprocess import check_output
+
+# from subprocess import check_output
 from typing import IO, List
 
 
