@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 import os
-
-# import sys
+import shlex
+import sys
 from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, Logger, basicConfig, getLogger
 from pathlib import Path
-
-# from subprocess import check_output
+from subprocess import run
 from typing import IO, List
 
 
@@ -31,122 +30,48 @@ def allow_create_fail(sql_path: str) -> str:
     return create_notfail_file
 
 
-# def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
-#    table_column_list: List[str] = list()
-#    for line in f_open:
-#        logger.info("line=%s" % line)
-#        if line.startswith(");"):
-#            alter_sql_open.write(line)
-#            return table_column_list
-#        else:
-#            alter_sql_open.write(line)
-#            line = line.strip().strip("\n").lstrip().rstrip(",")
-#            line_split = line.split()
-#            column_name = " ".join(line_split[:-1])
-#            table_column_list.append(column_name)
-#    sys.exit(f"failed on file: {f_open}")
 def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
-    table_column_list: List[str] = []
+    table_column_list: List[str] = list()
     for line in f_open:
         logger.info("line=%s" % line)
-        alter_sql_open.write(line)
-        line_stripped = line.strip()
-        if not line_stripped or line_stripped.startswith("--"):
-            continue  # skip empty lines and comments
-        if line_stripped.startswith(");"):
-            # End of CREATE TABLE block
+        if line.startswith(");"):
+            alter_sql_open.write(line)
             return table_column_list
-        # Remove trailing comma if present
-        if line_stripped.endswith(","):
-            line_stripped = line_stripped[:-1]
-        # Skip lines that don't look like column definitions
-        if " " not in line_stripped:
-            continue
-        line_split = line_stripped.split()
-        column_name = line_split[0]  # just the column name
-        table_column_list.append(column_name)
-    return table_column_list  # fallback
+        else:
+            alter_sql_open.write(line)
+            line = line.strip().strip("\n").lstrip().rstrip(",")
+            line_split = line.split()
+            column_name = " ".join(line_split[:-1])
+            table_column_list.append(column_name)
+    sys.exit(f"failed on file: {f_open}")
 
 
-# def alter_insert(sql_path: str, logger: Logger) -> str:
-#    specific_insert_file = "specific_insert.sql"
-#    alter_sql_open = open(specific_insert_file, "w")
-#    with open(sql_path, "r") as f_open:
-#        for line in f_open:
-#            if line.startswith("CREATE TABLE"):
-#                alter_sql_open.write(line)
-#                table_column_list = get_table_column_list(
-#                    f_open, alter_sql_open, logger
-#                )
-#            elif line.startswith("INSERT INTO"):
-#                line = line.strip("\n")
-#                specific_columns = "(" + ",".join(table_column_list) + ")"
-#                logger.info("specific_columns=%s" % specific_columns)
-#                line_split = line.split()
-#                line_split.insert(3, specific_columns)
-#                new_line = " ".join(line_split) + "\n"
-#               alter_sql_open.write(new_line)
-#           else:
-#                alter_sql_open.write(line)
-#    alter_sql_open.close()
-#    return specific_insert_file
 def alter_insert(sql_path: str, logger: Logger) -> str:
     specific_insert_file = "specific_insert.sql"
-    with open(specific_insert_file, "w") as alter_sql_open, open(
-        sql_path, "r"
-    ) as f_open:
-        table_column_list = []
+    alter_sql_open = open(specific_insert_file, "w")
+    with open(sql_path, "r") as f_open:
         for line in f_open:
             if line.startswith("CREATE TABLE"):
                 alter_sql_open.write(line)
                 table_column_list = get_table_column_list(
                     f_open, alter_sql_open, logger
                 )
-                continue
-
-            if line.startswith("INSERT INTO") or line.startswith(
-                "INSERT OR IGNORE INTO"
-            ):
-                line = line.strip()
-
-                # force OR IGNORE
-                line = line.replace("INSERT INTO", "INSERT OR IGNORE INTO")
-
-                # extract table name
-                parts = line.split()
-                table_name = parts[4]
-
+            elif line.startswith("INSERT INTO"):
+                line = line.strip("\n")
                 specific_columns = "(" + ",".join(table_column_list) + ")"
-                logger.info(f"specific_columns={specific_columns}")
-
-                # rewrite cleanly
-                if "VALUES" not in line:
-                    raise ValueError(f"Unexpected INSERT syntax: {line}")
-
-                vals = line.split("VALUES", 1)[1]
-                new_line = f"INSERT OR IGNORE INTO {table_name} {specific_columns} VALUES{vals}\n"
+                logger.info("specific_columns=%s" % specific_columns)
+                line_split = line.split()
+                line_split.insert(3, specific_columns)
+                new_line = " ".join(line_split) + "\n"
                 alter_sql_open.write(new_line)
-                continue
-
-            # otherwise just copy
-            alter_sql_open.write(line)
-
+            else:
+                alter_sql_open.write(line)
+    alter_sql_open.close()
     return specific_insert_file
 
 
-# def specific_column_insert(sql_path: str, logger: Logger) -> str:
-#    specific_insert_file = alter_insert(sql_path, logger)
-#    return specific_insert_file
 def specific_column_insert(sql_path: str, logger: Logger) -> str:
     specific_insert_file = alter_insert(sql_path, logger)
-    with open(specific_insert_file, "r") as f:
-        data = f.read()
-
-    data = data.replace("INSERT INTO", "INSERT OR IGNORE INTO")
-
-    with open(specific_insert_file, "w") as f:
-        f.write(data)
-
     return specific_insert_file
 
 
@@ -164,8 +89,6 @@ def setup_logging(args: Namespace, job_uuid: str) -> Logger:
 
 
 def main() -> int:
-    import sqlite3
-
     parser = ArgumentParser("merge an arbitrary number of sqlite files")
     parser.add_argument(
         "-d",
@@ -176,6 +99,7 @@ def main() -> int:
         help="Enable debug logging.",
     )
     parser.set_defaults(level=INFO)
+
     parser.add_argument("-s", "--source_sqlite", action="append", required=False)
     parser.add_argument("-u", "--job_uuid", required=True)
     args = parser.parse_args()
@@ -186,51 +110,38 @@ def main() -> int:
     logger = setup_logging(args, job_uuid)
     destination_sqlite_path = f"{job_uuid}.db"
 
-    # Empty input case: create empty DB file
     if not source_sqlite_list:
-        logger.info("empty set, create 0 byte sqlite file")
+        logger.info("empty set, create 0 byte file")
         Path(destination_sqlite_path).touch()
         return 0
 
-    # Create destination DB
-    conn = sqlite3.connect(destination_sqlite_path)
-    cur = conn.cursor()
-
     for source_sqlite_path in source_sqlite_list:
-        logger.info(f"merging source={source_sqlite_path}")
+        logger.info(f"processing {source_sqlite_path}")
+        source_sqlite_name = os.path.splitext(os.path.basename(source_sqlite_path))[0]
 
-        # Attach source DB read-only
-        cur.execute("ATTACH ? AS src", (source_sqlite_path,))
+        # dump using shell=True so redirection works
+        source_dump_path = f"{source_sqlite_name}.sql"
+        run(
+            f"sqlite3 {shlex.quote(source_sqlite_path)} '.dump' > {shlex.quote(source_dump_path)}",
+            shell=True,
+            check=True,
+        )
 
-        # Discover tables
-        tables = cur.execute("""
-            SELECT name
-            FROM src.sqlite_master
-            WHERE type='table'
-              AND name NOT LIKE 'sqlite_%'
-        """).fetchall()
+        # fix CREATE statements
+        create_notfail_file = allow_create_fail(source_dump_path)
 
-        for (table,) in tables:
-            logger.info(f"merging table={table}")
+        # add column lists to INSERTs
+        specific_insert_file = specific_column_insert(create_notfail_file, logger)
 
-            # Create table if missing (schema comes from source)
-            cur.execute(f"""
-                CREATE TABLE IF NOT EXISTS {table}
-                AS SELECT * FROM src.{table} WHERE 0;
-            """)
+        # load into destination db
+        run(
+            f"sqlite3 {shlex.quote(destination_sqlite_path)} < {shlex.quote(specific_insert_file)}",
+            shell=True,
+            check=True,
+        )
 
-            # Insert rows safely
-            cur.execute(f"""
-                INSERT OR IGNORE INTO {table}
-                SELECT * FROM src.{table};
-            """)
-
-        cur.execute("DETACH src")
-        conn.commit()
-
-    conn.close()
     return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
