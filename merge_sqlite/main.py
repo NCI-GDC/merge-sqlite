@@ -31,32 +31,37 @@ def allow_create_fail(sql_path: str) -> str:
 
 
 def get_table_column_list(f_open: IO, alter_sql_open: IO, logger: Logger) -> List[str]:
-    """
-    Parse column names from a CREATE TABLE block.
-    """
     table_column_list: List[str] = []
 
     for line in f_open:
-        logger.info("line=%s", line)
         alter_sql_open.write(line)
-
         stripped = line.strip()
+
         if not stripped or stripped.startswith("--"):
             continue
 
         if stripped.startswith(");"):
             return table_column_list
 
+        # remove trailing comma
         if stripped.endswith(","):
             stripped = stripped[:-1]
 
-        if " " not in stripped:
-            continue
+        # quoted column name
+        if stripped.startswith('"'):
+            end = stripped.find('"', 1)
+            if end == -1:
+                raise ValueError(f"Unterminated quoted column: {line}")
+            column_name = stripped[: end + 1]
 
-        column_name = stripped.split()[0]
+        # unquoted column name
+        else:
+            column_name = stripped.split()[0]
+
+        logger.info("parsed column: %s", column_name)
         table_column_list.append(column_name)
 
-    return table_column_list
+    raise ValueError("CREATE TABLE block did not terminate correctly")
 
 
 def alter_insert(sql_path: str, logger: Logger) -> str:
